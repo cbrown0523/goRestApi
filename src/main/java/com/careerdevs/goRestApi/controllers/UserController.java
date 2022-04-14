@@ -7,7 +7,7 @@ import org.springframework.core.env.Environment;
 import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
-
+//RestController- allow a class to handle a request enables a class to be called a router. conatinds 1 or more route handleer
 @RestController
 @RequestMapping("/api/user")
 public class UserController {
@@ -29,24 +29,37 @@ public class UserController {
          }
          */
     @GetMapping("/{id}")
-    public Object getUser(RestTemplate restTemplate, @PathVariable("id") String userId) {
+
+   // RestTemplate is a synchronous client to perform HTTP requests. only need if making an external api request
+                        //? = wildcard
+    public ResponseEntity<?> getUser(RestTemplate restTemplate, @PathVariable("id") String userId ) {
         try {
             String url = "https://gorest.co.in/public/v2/users/" + userId;
             String token = env.getProperty("GOREST_TOKEN");
+         //headers used for Auth. connecting token in header; and status
+            //headers are used when sending information about the request
+            //headers can be used when receiving
             HttpHeaders headers = new HttpHeaders();
             headers.setBearerAuth(token);
 
+            //Only way to send headers is to use HTTPENtity. HTTP entity building the request about to be sent to goRest. If using headers need to create a Http entity so rest template can attach those headers to the request
             HttpEntity request = new HttpEntity(headers);
 
+            //.echange returns default ResponseEntity. allows u to build out the request manulally
             return restTemplate.exchange(url, HttpMethod.GET, request, Object.class);
+
             //headers.set("Authorization", "Bearer" + token);
             //return " Successfully retrieved user: " + userId;
         } catch (Exception e) {
-            return e.getMessage();
+            return new ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
+
+    // getForObject returns an instance of a class
+
+
     //vid1 75
-    //reponse entity <object> versus rest template.exchange  -> line 60
+    //reponse entity <object> versus rest template.exchange  -> line 60 --> response entity is what .echange returns (return type of generic set)
 
     @DeleteMapping("/{id}")
 
@@ -92,6 +105,8 @@ public class UserController {
             //headers.setBearerAuth(token);
 
             //create a request. A place to store user, a place to attach the requestBody to the request itself.
+
+            //creating a new request
             HttpEntity<UserModel> request= new HttpEntity(newUser);
 
             //send a request through restTemplate through postForObject
@@ -135,6 +150,18 @@ public class UserController {
 
 }
 
+//    @Bean
+//    public RestTemplate restTemplate() {  line 151 difference
+//
+//        var factory = new SimpleClientHttpRequestFactory();
+//
+//        factory.setConnectTimeout(3000);
+//        factory.setReadTimeout(3000);
+//
+//        return new RestTemplate(factory);
+//    }
+//}
+
     @GetMapping("/firstpage")
     public Object getFirstPage(RestTemplate restTemplate) {
 
@@ -173,16 +200,63 @@ public class UserController {
             // we are going to start by requesting first page.
             String url = "https://gorest.co.in/public/v2/users?page=" + pageNumber;
 
-            //how is the UserModel[ working but the UserModelArray is not . How are we able to map whts inside UserModelArray with UserModel class
+            //how is the UserModel working but the UserModelArray is not . How are we able to map whts inside UserModelArray with UserModel class
+
+
+//            @Controller
+//            public class MyController {
+//
+//                @RequestMapping(value = "/getCountry")
+//                public ResponseEntity<Country> getCountry() {
+//
+//                    var c = new Country();
+//                    c.setName("France");
+//                    c.setPopulation(66984000);
+//
+//                    var headers = new HttpHeaders();
+//                    headers.add("Responded", "MyController");
+//
+//                    return ResponseEntity.accepted().headers(headers).body(c);
+//                }
+//
+//                @RequestMapping(value = "/getCountry2")
+//                @ResponseBody
+//                public Country getCountry2() {
+//
+//                    var c = new Country();
+//                    c.setName("France");
+//                    c.setPopulation(66984000);
+//
+//                    return c;
+//                }
+//            }
+//
+
+
+           // difference between ResponseEntity method and using restTemplate. getForEntity lines 179-215
+
+            //ResponseEntity is a class. A way of containign a entire response of HTTP request
+
+            //RestTemplate is a class that contaoins methods to senf=d HTTP requests
+
+            //GetForEntity is a method that makes a get request, returning the entire response entity
+
+
+
+
 
             ResponseEntity<UserModel[]> response = restTemplate.getForEntity(url, UserModel[].class);
             //getForEntity picks up all data in the header and returns a ResponseEntity
             UserModel[] firstPageUser = response.getBody();
+
+            // why not create a new instance of HttpHeaders line 223
+//            var headers = new HttpHeaders();
+//            headers.add("Responded", "MyController");
+            //return ResponseEntity.accepted().headers(headers).body(c);
+
             HttpHeaders responseHeaders = response.getHeaders();
             String totalPages= responseHeaders.get("X-Pagination-Pages").get(0);
             System.out.println("Total pages : " + totalPages);
-
-
 
             return new ResponseEntity<>(firstPageUser, HttpStatus.OK);
 //            return new ResponseEntity<>(firstPageUser,HttpStatus.OK);
@@ -206,3 +280,13 @@ public class UserController {
 //.exchange method versus? (the other way?)
 //why do we create and use http entity
 //difference between compiling and serialization
+
+//line 253
+//    @GetMapping("/")
+//    public String index(Model model) {
+//
+//        model.addAttribute("now", LocalDate.now());
+//        model.addAttribute("message", this.message);
+//
+//        return "index";
+//    }
